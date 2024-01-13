@@ -5,9 +5,10 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "npm run build && node dist/cli.js",
-    "build": "npm run build:lib && npm run build:cli",
+    "build": "npm run build:lib && npm run build:cli && npm run types",
     "build:lib": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node16 --outfile=dist/index.js",
-    "build:cli": "esbuild src/cli.ts --platform=node --format=esm --target=node16 --outfile=dist/cli.js"
+    "build:cli": "esbuild src/cli.ts --platform=node --format=esm --target=node16 --outfile=dist/cli.js",
+    "types": "tsc --emitDeclarationOnly --declaration --target ESNext --moduleResolution node --module ES2022 --outDir dist"
   },
   "type": "module",
   "repository": {
@@ -34,5 +35,9 @@
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.12"
-  }
+  },
+  "files": [
+    "dist"
+  ],
+  "types": "dist/index.d.ts"
 }
