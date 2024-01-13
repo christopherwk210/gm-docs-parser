@@ -2,16 +2,26 @@
   "name": "gm-docs-parser",
   "version": "1.0.0",
   "description": "Convert the open source GameMaker manual into JSON data.",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "node dist/index.js",
-    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node16 --outfile=dist/index.js"
+    "start": "npm run build && node dist/cli.js",
+    "build": "npm run build:lib && npm run build:cli",
+    "build:lib": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node16 --outfile=dist/index.js",
+    "build:cli": "esbuild src/cli.ts --platform=node --format=esm --target=node16 --outfile=dist/cli.js"
   },
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+git@github.com:christopherwk210/gm-docs-parser.git"
+  },
   "keywords": [
     "GameMaker",
     "documentation",
     "manual"
   ],
+  "bin": {
+    "gm-docs-parser": "./dist/cli.js"
+  },
   "author": "Topher Anselmo <christopherwk210@gmail.com>",
   "license": "MIT",
   "devDependencies": {
@@ -21,5 +31,8 @@
   },
   "engines": {
     "node": ">=16.14.0"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12"
   }
 }

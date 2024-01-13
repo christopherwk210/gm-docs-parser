@@ -1,17 +1,16 @@
-import * as fs from 'fs';
-import * as child_process from 'child_process';
+import fs from 'node:fs';
+import child_process from 'node:child_process';
 
-import { gmManualRepo, workingDirectory, manualDirectory } from './shared.js';
+const gmManualRepo = 'git@github.com:YoYoGames/GameMaker-Manual.git gm_manual';
 
-export async function git() {
-  if (fs.existsSync(manualDirectory)) {
-    return await pullRepo();
-  } else {
-    return await cloneRepo();
-  }
+export async function git(workingDirectory: string) {
+  const manualDirectory = `${workingDirectory}/gm_manual`;
+  const success = await (fs.existsSync(manualDirectory) ? pullRepo(manualDirectory) : cloneRepo(workingDirectory));
+
+  return { success, manualDirectory };
 }
 
-async function cloneRepo(): Promise<boolean> {
+async function cloneRepo(workingDirectory: string): Promise<boolean> {
   return new Promise(resolve => {
     const child = child_process.spawn(
       'git',
@@ -23,7 +22,7 @@ async function cloneRepo(): Promise<boolean> {
   });
 }
 
-async function pullRepo(): Promise<boolean> {
+async function pullRepo(manualDirectory: string): Promise<boolean> {
   return new Promise(resolve => {
     const child = child_process.spawn(
       'git',
@@ -33,10 +32,4 @@ async function pullRepo(): Promise<boolean> {
 
     child.on('close', (code) => resolve(code === 0));
   });
-}
-
-export function deleteManualDirectory() {
-  if (fs.existsSync(manualDirectory)) {
-    fs.rmdirSync(manualDirectory, { recursive: true });
-  }
 }
