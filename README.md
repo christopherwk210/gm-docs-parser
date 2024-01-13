@@ -22,3 +22,19 @@ if (result.success) {
   console.error(result.reason);
 }
 ```
+
+## CLI usage
+
+```bash
+# Install globally
+> npm install gm-docs-parser -g
+
+# Generate a docs.json file in CWD
+> gm-docs-parser
+
+# Generate a docs.json file without prettifying the output
+> gm-docs-parser --ugly
+
+# Generate a docs.json file and delete the cloned GameMaker manual afterwards
+> gm-docs-parser --clean
+```
