@@ -10,6 +10,7 @@ interface DocumentationEntry {
     url: string;
     blurb: string;
     syntax: string;
+    title: string;
     args: {
       argument: string;
       description: string;
@@ -39,19 +40,22 @@ function handleHtmlPage(htmlContents: string, filePath: string, gmlTokens: Retur
       } catch (e) {}
 
       for (const keyword of keywords) {
-        if (gmlTokens.keywords.built_in.includes(keyword)) {
-          // Functions
-          const { args, blurb, syntax } = scrapePage($, keyword);
-          const url = `https://manual.gamemaker.io/monthly/en/${filePath.split('contents')[1].replace(/\\/g, '/')}`;
 
-          if (!documentationDatabase[keyword]) documentationDatabase[keyword] = { name: keyword, pages: [] };
-          documentationDatabase[keyword].pages.push({ filePath, url, blurb, syntax, args });
-        } else if (gmlTokens.keywords.keyword.includes(keyword)) {
-          // Language keywords (if, else, etc.)
-        } else if (gmlTokens.keywords.literal.includes(keyword)) {
-          // Constants (true, false, etc.)
-        } else if (gmlTokens.keywords.symbol.includes(keyword)) {
-          // Symbols (x, y, argument0, id, etc.)
+        const { args, blurb, syntax, title } = scrapePage($, keyword);
+        const url = `https://manual.gamemaker.io/monthly/en/${filePath.split('contents')[1].replace(/\\/g, '/')}`;
+
+        if (
+          gmlTokens.keywords.built_in.includes(keyword) ||
+          gmlTokens.keywords.literal.includes(keyword) ||
+          gmlTokens.keywords.symbol.includes(keyword)
+        ) {
+          if (!documentationDatabase[keyword]) {
+            documentationDatabase[keyword] = { name: keyword, pages: [] };
+          }
+
+          if (documentationDatabase[keyword].pages.every(page => page.filePath !== filePath)) {
+            documentationDatabase[keyword].pages.push({ filePath, url, blurb, syntax, args, title });
+          }
         }
       }
     }
@@ -62,6 +66,7 @@ function scrapePage($: cheerio.CheerioAPI, functionName: string) {
   let blurb = '';
   let syntax = '';
   let args: DocumentationEntry['pages'][number]['args'] = [];
+  let title = $('title').text();
 
   const p = $('p').first();
   blurb = p.text().replace('\n', ' ');
@@ -100,7 +105,7 @@ function scrapePage($: cheerio.CheerioAPI, functionName: string) {
     });
   }
 
-  return { blurb, syntax, args };
+  return { blurb, syntax, args, title };
 }
 
 function readGmlTokens(manualDirectory: string): {
@@ -120,7 +125,7 @@ function readGmlTokens(manualDirectory: string): {
 }
 
 function scanHtml(manualDirectory: string, execute: (htmlContents: string, filePath: string) => void) {
-  const gmlReferenceDirectory = path.join(manualDirectory, 'Manual/contents/GameMaker_Language/GML_Reference');
+  const gmlReferenceDirectory = path.join(manualDirectory, 'Manual/contents/GameMaker_Language');
 
   const scanDirectory = (directory: string) => {
     const files = fs.readdirSync(directory);
