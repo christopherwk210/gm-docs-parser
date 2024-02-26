@@ -31,7 +31,7 @@ export function parseLocalDocs(manualDirectory: string, functionNames: GMFunctio
 function handleHtmlPage(htmlContents: string, functionNames: GMFunction[], filePath: string) {
   let foundFunc: GMFunction | null = null;
   for (const func of functionNames) {
-    const lastFilePathSegment = filePath.split('\\').pop()!;
+    const lastFilePathSegment = filePath.split(path.sep).pop()!;
     const lastSegment = func.url.split('/').pop()!;
 
     if (lastFilePathSegment === lastSegment) {
