@@ -1,10 +1,11 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import child_process from 'node:child_process';
 
 const gmManualRepo = 'git@github.com:YoYoGames/GameMaker-Manual.git gm_manual';
 
 export async function git(workingDirectory: string) {
-  const manualDirectory = `${workingDirectory}/gm_manual`;
+  const manualDirectory = path.join(workingDirectory, 'gm_manual');
   const success = await (fs.existsSync(manualDirectory) ? pullRepo(manualDirectory) : cloneRepo(workingDirectory));
 
   return { success, manualDirectory };

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { git } from './git.js';
 import { parseLocalDocs, type DocumentationDatabase } from './parse.js';
+import { getFunctionNames } from './idata.js';
 
 /**
  * @param workingDirectory The directory to use when cloning the GameMaker Manual repository. Leave as undefined to use the default os temporary directory.
@@ -14,7 +15,10 @@ export async function parseDocs(workingDirectory: string): Promise<
   const { success, manualDirectory } = await git(workingDirectory);
   if (!success) return { success: false, reason: 'Failed to clone repository.' };
 
-  const docs = parseLocalDocs(manualDirectory);
+  const functionNames = await getFunctionNames();
+  if (!functionNames.success) return { success: false, reason: functionNames.reason };
+
+  const docs = parseLocalDocs(manualDirectory, functionNames.functions);
 
   return { success: true, docs };
 }

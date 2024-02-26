@@ -1,12 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import vm from 'node:vm';
+// import vm from 'node:vm';
 import * as cheerio from 'cheerio';
+import type { GMFunction } from './idata.js';
 
 interface DocumentationEntry {
   name: string;
   pages: {
-    filePath: string;
+    filePath?: string;
     url: string;
     blurb: string;
     syntax: string;
@@ -22,44 +23,35 @@ export type DocumentationDatabase = Record<string, DocumentationEntry>;
 
 const documentationDatabase: DocumentationDatabase = {};
 
-export function parseLocalDocs(manualDirectory: string) {
-  const gmlTokens = readGmlTokens(manualDirectory);
-  scanHtml(manualDirectory, (htmlContents, filePath) => handleHtmlPage(htmlContents, filePath, gmlTokens));
+export function parseLocalDocs(manualDirectory: string, functionNames: GMFunction[]) {
+  scanHtml(manualDirectory, (htmlContents, filePath) => handleHtmlPage(htmlContents, functionNames, filePath));
   return documentationDatabase;
 }
 
-function handleHtmlPage(htmlContents: string, filePath: string, gmlTokens: ReturnType<typeof readGmlTokens>) {
-  const $ = cheerio.load(htmlContents);
+function handleHtmlPage(htmlContents: string, functionNames: GMFunction[], filePath: string) {
+  let foundFunc: GMFunction | null = null;
+  for (const func of functionNames) {
+    const lastFilePathSegment = filePath.split('\\').pop()!;
+    const lastSegment = func.url.split('/').pop()!;
 
-  $('body').contents().map((_, el) => {
-    if (el.type === 'comment') {
-      let keywords: string[] = [];
-
-      try {
-        keywords = el.data.split('KEYWORDS')[1].split('TAGS')[0].split('\n').map(line => line.trim());
-      } catch (e) {}
-
-      for (const keyword of keywords) {
-
-        const { args, blurb, syntax, title } = scrapePage($, keyword);
-        const url = `https://manual.gamemaker.io/monthly/en/${filePath.split('contents')[1].replace(/\\/g, '/')}`;
-
-        if (
-          gmlTokens.keywords.built_in.includes(keyword) ||
-          gmlTokens.keywords.literal.includes(keyword) ||
-          gmlTokens.keywords.symbol.includes(keyword)
-        ) {
-          if (!documentationDatabase[keyword]) {
-            documentationDatabase[keyword] = { name: keyword, pages: [] };
-          }
-
-          if (documentationDatabase[keyword].pages.every(page => page.filePath !== filePath)) {
-            documentationDatabase[keyword].pages.push({ filePath, url, blurb, syntax, args, title });
-          }
-        }
-      }
+    if (lastFilePathSegment === lastSegment) {
+      foundFunc = func;
     }
-  });
+  }
+
+  if (!foundFunc) return;
+
+  const keyword = foundFunc.name;
+  const $ = cheerio.load(htmlContents);
+  const { args, blurb, syntax, title } = scrapePage($, keyword);
+
+  if (!documentationDatabase[keyword]) {
+    documentationDatabase[keyword] = { name: keyword, pages: [] };
+  }
+
+  const url = `https://manual.gamemaker.io/monthly/en${filePath.split('contents')[1].replace(/\\/g, '/')}`;
+  documentationDatabase[keyword].pages.push({ url, blurb, syntax, args, title });
+  functionNames = functionNames.filter(func => func.name !== keyword);
 }
 
 function scrapePage($: cheerio.CheerioAPI, functionName: string) {
@@ -106,22 +98,6 @@ function scrapePage($: cheerio.CheerioAPI, functionName: string) {
   }
 
   return { blurb, syntax, args, title };
-}
-
-function readGmlTokens(manualDirectory: string): {
-  keywords: {
-    keyword: string[];
-    built_in: string[];
-    literal: string[];
-    symbol: string[];
-  };
-} {
-  const gmlJsPath = path.join(manualDirectory, 'Manual/contents/assets/scripts/gml.js');
-
-  const sandbox = { gml: {} as any };
-  vm.runInNewContext(fs.readFileSync(gmlJsPath, 'utf8').replace('export default', 'gml ='), sandbox);
-
-  return sandbox.gml({});
 }
 
 function scanHtml(manualDirectory: string, execute: (htmlContents: string, filePath: string) => void) {
