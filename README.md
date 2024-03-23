@@ -7,7 +7,7 @@ Parses the [GameMaker Manual](https://github.com/YoYoGames/GameMaker-Manual) and
 Only ESM is supported.
 
 ```Typescript
-import { parseDocs } from 'gh-docs-parser';
+import { parseDocs } from 'gm-docs-parser';
 
 // Path to an existing folder where the GameMaker Manual will be cloned into
 const workingDirectory = 'path/to/folder';
