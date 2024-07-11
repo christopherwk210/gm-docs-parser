@@ -2,10 +2,31 @@ import https from 'node:https';
 import vm from 'node:vm';
 
 const idataLocation = 'https://manual.gamemaker.io/monthly/en/whxdata/idata1.new.js';
+const jsonLocation = 'https://manual.gamemaker.io/monthly/en/helpdocs_keywords.json';
 
 export type GMFunction = { name: string; url: string; };
 
 export async function getFunctionNames(): Promise<{
+  success: false;
+  reason: string;
+} | {
+  success: true;
+  functions: GMFunction[];
+}> {
+  const { json, success } = await getjson();
+  if (!success) return { success: false, reason: 'Failed to fetch idata.' };
+
+  const functions: { name: string; url: string; }[] = [];
+  for (const key of Object.keys(json)) {
+    if (json[key].includes('GameMaker_Language')) {
+      functions.push({ name: key, url: json[key] + '.htm' });
+    }
+  }
+
+  return { success: true, functions };
+}
+
+export async function getFunctionNamesFromIdata(): Promise<{
   success: false;
   reason: string;
 } | {
@@ -28,7 +49,6 @@ export async function getFunctionNames(): Promise<{
   });
 
   return { success: true, functions };
-
 }
 
 async function getidata() {
@@ -61,4 +81,22 @@ async function getidata() {
   });
 
   return { idata: sandbox.index, success: true };
+}
+
+async function getjson() {
+  const contents = await new Promise<string | null>(resolve => {
+    https.get(jsonLocation, res => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve(data));
+    }).on('error', () => resolve(null));
+  });
+
+  if (contents === null || contents.length === 0) return { success: false };
+
+  try {
+    return { json: JSON.parse(contents), success: true };
+  } catch (e) {
+    return { success: false };
+  }
 }

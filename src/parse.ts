@@ -39,7 +39,7 @@ function handleHtmlPage(htmlContents: string, functionNames: GMFunction[], fileP
     }
   }
 
-  if (!foundFunc) return;
+  if (!foundFunc || !foundFunc.name || foundFunc.name === 'constructor') return;
 
   const keyword = foundFunc.name;
   const $ = cheerio.load(htmlContents);
@@ -50,6 +50,10 @@ function handleHtmlPage(htmlContents: string, functionNames: GMFunction[], fileP
   }
 
   const url = `https://manual.gamemaker.io/monthly/en${filePath.split('contents')[1].replace(/\\/g, '/')}`;
+  if (!documentationDatabase[keyword].pages) {
+    console.log(JSON.stringify(documentationDatabase[keyword]));
+    console.log(keyword);
+  }
   documentationDatabase[keyword].pages.push({ url, blurb, syntax, args, title });
   functionNames = functionNames.filter(func => func.name !== keyword);
 }
